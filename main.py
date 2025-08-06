@@ -100,7 +100,7 @@ def start_playback(token):
     response = requests.put(url, headers=headers, json=fields)
 
     if response.status_code != 204:
-        print("Starting playback failed")
+        print(f"Starting playback failed: {response.reason}")
 
     url = f"https://api.spotify.com/v1/me/player/shuffle"
     headers = {
@@ -139,18 +139,18 @@ def get_track_info(token):
         print(f"Getting track info failed: {response.reason}")
 
     item = response.json()['item']
-    return item['name'], [artist['name'] for artist in item['artists']]
+    return item['name'], {artist['name'] for artist in item['artists']}
 
 
 def uniformize(s):
-	t = ''
-	for c in s:
-		if c in ['(', '-']:
-			break
-		if c in ['.', '?', '!', '\'', ',', ' ']:
-			continue
-		t += c
-	return t.strip().lower()
+    t = ''
+    for c in s:
+        if c in ['(', '-']:
+            break
+        if c in ['.', '?', '!', '\'', ',', ' ']:
+            continue
+        t += c
+    return t.strip().lower()
 
 
 if __name__ == '__main__':
@@ -161,18 +161,18 @@ if __name__ == '__main__':
     rounds = 0
     playing = True
     while playing:
-        rounds += 1
         skip(token)
+        rounds += 1
+        missing_title = True
         title, artists = get_track_info(token)
-        missing_title = missing_artist = True
-        while missing_title or missing_artist:
+        while missing_title or artists:
             while not (command := input("Enter Title, Artist or Featuring Artist\n> ")):
                 pass
             if command[0] == '!':
                 match command[1:]:
                     case "skip":
                         print(f'Title: "{title}"')
-                        print(f'Artists:', ", ".join(artists))
+                        print(f'Missing Artists:', ", ".join(artists))
                         break
                     case "pause":
                         # Handle pause
@@ -180,16 +180,21 @@ if __name__ == '__main__':
                     case "quit":
                         playing = False
                         break
+                    case "refresh":
+                        title, artists = get_track_info(token)
             else:
                 guess = uniformize(command)
                 if missing_title and guess == uniformize(title):
                     missing_title = False
                     points += 1
                     print("Correct title!")
-                elif missing_artist and guess in [uniformize(name) for name in artists]:
-                    missing_artist = False
-                    points += 1
-                    print("Correct artist!")
                 else:
-                    print("No match...")
+                    for name in artists:
+                        if guess == uniformize(name):
+                            points += 1
+                            print("Correct artist!")
+                            artists.discard(name)
+                            break
+                    else:
+                        print("No match...")
     print(f"You got a total of {points} points over {rounds} rounds.")
