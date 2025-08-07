@@ -8,7 +8,7 @@ import threading
 import urllib.parse
 
 
-PORT = 7000
+PORT = 8000
 REDIRECT_URL = f"http://localhost:{PORT}"
 PLAYLIST_URI = "spotify:playlist:1bCvkBvfgfT2w7q61RJE7O"
 SCOPE = "user-modify-playback-state user-read-currently-playing user-read-playback-state playlist-modify-public playlist-modify-private "
@@ -102,18 +102,14 @@ def start_playback(token):
     if response.status_code != 204:
         print(f"Starting playback failed: {response.reason}")
 
-    url = f"https://api.spotify.com/v1/me/player/shuffle"
+    url = f"https://api.spotify.com/v1/me/player/shuffle?state=true"
     headers = {
         'Authorization': "Bearer " + token,
-        'Content-Type': "application/json"
-    }
-    fields = {
-        'state': True,
     }
 
-    response = requests.put(url, headers=headers, json=fields)
+    response = requests.put(url, headers=headers)
 
-    if response.status_code != 204:
+    if response.status_code not in (200, 204):
         print(f"Enabling shuffle failed: {response.reason}")
 
 
@@ -126,6 +122,28 @@ def skip(token):
 
     if response.status_code not in (200, 204):
         print(f"Skip failed: {response.reason}")
+
+
+def pause(token):
+    url = f"https://api.spotify.com/v1/me/player/pause"
+    headers = {
+        'Authorization': "Bearer " + token
+    }
+    response = requests.put(url, headers=headers)
+
+    if response.status_code not in (200, 204):
+        print(f"Pause failed: {response.reason}")
+
+
+def resume(token):
+    url = f"https://api.spotify.com/v1/me/player/play"
+    headers = {
+        'Authorization': "Bearer " + token
+    }
+    response = requests.put(url, headers=headers)
+
+    if response.status_code not in (200, 204):
+        print(f"Resume failed: {response.reason}")
 
 
 def get_track_info(token):
@@ -175,8 +193,9 @@ if __name__ == '__main__':
                         print(f'Missing Artists:', ", ".join(artists))
                         break
                     case "pause":
-                        # Handle pause
+                        pause(token)
                         input("Press enter to continue...")
+                        resume(token)
                     case "quit":
                         playing = False
                         break
