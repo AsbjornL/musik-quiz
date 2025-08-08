@@ -8,7 +8,7 @@ import threading
 import urllib.parse
 
 
-PORT = 8000
+PORT = 7000
 REDIRECT_URL = f"http://localhost:{PORT}"
 PLAYLIST_URI = "spotify:playlist:1bCvkBvfgfT2w7q61RJE7O"
 SCOPE = "user-modify-playback-state user-read-currently-playing user-read-playback-state playlist-modify-public playlist-modify-private "
@@ -165,7 +165,7 @@ def uniformize(s):
     for c in s:
         if c in ['(', '-']:
             break
-        if c in ['.', '?', '!', '\'', ',', ' ']:
+        if c in ['.', '?', '!', '\'', ',', ' ', '´']:
             continue
         t += c
     return t.strip().lower()
@@ -178,12 +178,13 @@ if __name__ == '__main__':
     points = 0
     rounds = 0
     playing = True
+    no_skip = False
     while playing:
         skip(token)
         rounds += 1
         missing_title = True
         title, artists = get_track_info(token)
-        while missing_title or artists:
+        while missing_title or artists or no_skip:
             while not (command := input("Enter Title, Artist or Featuring Artist\n> ")):
                 pass
             if command[0] == '!':
@@ -200,7 +201,10 @@ if __name__ == '__main__':
                         playing = False
                         break
                     case "refresh":
+                        missing_title = True
                         title, artists = get_track_info(token)
+                    case "noskip":
+                        no_skip = not no_skip
             else:
                 guess = uniformize(command)
                 if missing_title and guess == uniformize(title):
