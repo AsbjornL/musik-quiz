@@ -6,6 +6,8 @@ import http.server
 import socketserver
 import threading
 import urllib.parse
+import unicodedata
+import re
 
 
 PORT = 7000
@@ -168,7 +170,15 @@ def uniformize(s):
         if c in ['.', '?', '!', '\'', ',', ' ', '´']:
             continue
         t += c
-    return t.strip().lower()
+
+    normalized = unicodedata.normalize('NFD', t)
+    without_accents = ''.join(
+        ch for ch in normalized
+        if unicodedata.category(ch) != 'Mn'
+    )
+    cleaned = re.sub(r'[^0-9a-zA-Z]', '', without_accents)
+
+    return cleaned.strip().lower()
 
 
 if __name__ == '__main__':
@@ -179,45 +189,47 @@ if __name__ == '__main__':
     rounds = 0
     playing = True
     no_skip = False
-    while playing:
-        skip(token)
-        rounds += 1
-        missing_title = True
-        title, artists = get_track_info(token)
-        while missing_title or artists or no_skip:
-            while not (command := input("Enter Title, Artist or Featuring Artist\n> ")):
-                pass
-            if command[0] == '!':
-                match command[1:]:
-                    case "skip":
-                        print(f'Title: "{title}"')
-                        print(f'Missing Artists:', ", ".join(artists))
-                        break
-                    case "pause":
-                        pause(token)
-                        input("Press enter to continue...")
-                        resume(token)
-                    case "quit":
-                        playing = False
-                        break
-                    case "refresh":
-                        missing_title = True
-                        title, artists = get_track_info(token)
-                    case "noskip":
-                        no_skip = not no_skip
-            else:
-                guess = uniformize(command)
-                if missing_title and guess == uniformize(title):
-                    missing_title = False
-                    points += 1
-                    print("Correct title!")
-                else:
-                    for name in artists:
-                        if guess == uniformize(name):
-                            points += 1
-                            print("Correct artist!")
-                            artists.discard(name)
+    try:
+        while playing:
+            skip(token)
+            rounds += 1
+            missing_title = True
+            title, artists = get_track_info(token)
+            while missing_title or artists or no_skip:
+                while not (command := input("Enter Title, Artist or Featuring Artist\n> ")):
+                    pass
+                if command[0] == '!':
+                    match command[1:]:
+                        case "skip":
+                            print(f'Title: "{title}"')
+                            print(f'Missing Artists:', ", ".join(artists))
                             break
+                        case "pause":
+                            pause(token)
+                            input("Press enter to continue...")
+                            resume(token)
+                        case "quit":
+                            playing = False
+                            break
+                        case "refresh":
+                            missing_title = True
+                            title, artists = get_track_info(token)
+                        case "noskip":
+                            no_skip = not no_skip
+                else:
+                    guess = uniformize(command)
+                    if missing_title and guess == uniformize(title):
+                        missing_title = False
+                        points += 1
+                        print("Correct title!")
                     else:
-                        print("No match...")
-    print(f"You got a total of {points} points over {rounds} rounds.")
+                        for name in artists:
+                            if guess == uniformize(name):
+                                points += 1
+                                print("Correct artist!")
+                                artists.discard(name)
+                                break
+                        else:
+                            print("No match...")
+    finally:
+        print(f"You got a total of {points} points over {rounds} rounds.")
