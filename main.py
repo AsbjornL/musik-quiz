@@ -8,9 +8,10 @@ import threading
 import urllib.parse
 import unicodedata
 import re
+import random
 
 
-PORT = 7000
+PORT = 8000
 REDIRECT_URL = f"http://localhost:{PORT}"
 PLAYLIST_URI = "spotify:playlist:1bCvkBvfgfT2w7q61RJE7O"
 SCOPE = "user-modify-playback-state user-read-currently-playing user-read-playback-state playlist-modify-public playlist-modify-private "
@@ -118,12 +119,24 @@ def start_playback(token):
 def skip(token):
     url = f"https://api.spotify.com/v1/me/player/next"
     headers = {
-        'Authorization': "Bearer " + token
+        'Authorization': "Bearer " + token,
     }
     response = requests.post(url, headers=headers)
 
     if response.status_code not in (200, 204):
         print(f"Skip failed: {response.reason}")
+
+
+def enqueue(token, uri):
+    url = f"https://api.spotify.com/v1/me/player/queue?uri={uri}"
+    headers = {
+        'Authorization': "Bearer " + token,
+        'Content-Type': "application/json",
+    }
+    response = requests.post(url, headers=headers)
+
+    if response.status_code not in (200, 204):
+        print(f"Enqueue failed: {response.reason}")
 
 
 def pause(token):
@@ -159,7 +172,7 @@ def get_track_info(token):
         print(f"Getting track info failed: {response.reason}")
 
     item = response.json()['item']
-    return item['name'], {artist['name'] for artist in item['artists']}
+    return item['name'], {artist['name'] for artist in item['artists']}, item['uri']
 
 
 def uniformize(s):
@@ -189,12 +202,17 @@ if __name__ == '__main__':
     rounds = 0
     playing = True
     no_skip = False
+    failed = []
     try:
         while playing:
+            if random.randint(0, 99) < 10 * len(failed):
+                random.shuffle(failed)
+                enqueue(token, failed.pop())
             skip(token)
             rounds += 1
             missing_title = True
-            title, artists = get_track_info(token)
+            artist_guessed = False
+            title, artists, uri = get_track_info(token)
             while missing_title or artists or no_skip:
                 while not (command := input("Enter Title, Artist or Featuring Artist\n> ")):
                     pass
@@ -203,7 +221,11 @@ if __name__ == '__main__':
                         case "skip":
                             print(f'Title: "{title}"')
                             print(f'Missing Artists:', ", ".join(artists))
+                            if missing_title and not artist_guessed:
+                                failed.add(uri)
                             break
+                        case "kill":
+                            failed.pop()
                         case "pause":
                             pause(token)
                             input("Press enter to continue...")
@@ -216,6 +238,11 @@ if __name__ == '__main__':
                             title, artists = get_track_info(token)
                         case "noskip":
                             no_skip = not no_skip
+                        case "again":
+                            print(f'Title: "{title}"')
+                            print(f'Missing Artists:', ", ".join(artists))
+                            failed.add(uri)
+                            break
                 else:
                     guess = uniformize(command)
                     if missing_title and guess == uniformize(title):
@@ -225,6 +252,7 @@ if __name__ == '__main__':
                     else:
                         for name in artists:
                             if guess == uniformize(name):
+                                artist_guessed = True
                                 points += 1
                                 print("Correct artist!")
                                 artists.discard(name)
