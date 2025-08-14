@@ -222,7 +222,7 @@ if __name__ == '__main__':
                             print(f'Title: "{title}"')
                             print(f'Missing Artists:', ", ".join(artists))
                             if missing_title and not artist_guessed:
-                                failed.add(uri)
+                                failed.append(uri)
                             break
                         case "kill":
                             failed.pop()
@@ -235,13 +235,13 @@ if __name__ == '__main__':
                             break
                         case "refresh":
                             missing_title = True
-                            title, artists = get_track_info(token)
+                            title, artists, uri = get_track_info(token)
                         case "noskip":
                             no_skip = not no_skip
                         case "again":
                             print(f'Title: "{title}"')
                             print(f'Missing Artists:', ", ".join(artists))
-                            failed.add(uri)
+                            failed.append(uri)
                             break
                 else:
                     guess = uniformize(command)
