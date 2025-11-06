@@ -11,9 +11,10 @@ import re
 import random
 
 
-PORT = 8000
+PORT = 7000
 REDIRECT_URL = f"http://localhost:{PORT}"
-PLAYLIST_URI = "spotify:playlist:1bCvkBvfgfT2w7q61RJE7O"
+PLAYLIST_ID = "1bCvkBvfgfT2w7q61RJE7O"
+PLAYLIST_URI = f"spotify:playlist:{PLAYLIST_ID}"
 SCOPE = "user-modify-playback-state user-read-currently-playing user-read-playback-state playlist-modify-public playlist-modify-private "
 
 
@@ -175,6 +176,48 @@ def get_track_info(token):
     return item['name'], {artist['name'] for artist in item['artists']}, item['uri']
 
 
+def kill(uri, token):
+    assert uri.startswith("spotify:track:")
+    track_id = uri[14:]
+    url = f"https://api.spotify.com/v1/tracks/{track_id}"
+    headers = {
+        'Authorization': "Bearer " + token
+    }
+    response = requests.get(url, headers=headers)
+
+    if response.status_code not in (200, 204):
+        print(f"Getting track info failed: {response.reason}")
+
+    json = response.json()
+    print(f"Name: {json['name']}")
+    print(f"Artists: {', '.join(artist['name'] for artist in json['artists'])}")
+
+    answer = input('Confirm removal [y/n] ')
+    if answer != 'y':
+        print("Removal cancelled")
+        return False
+
+    url = f"https://api.spotify.com/v1/playlists/{PLAYLIST_ID}/tracks"
+    payload = {
+        "tracks": [
+            {"uri": uri}
+        ]
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        'Authorization': "Bearer " + token
+    }
+
+    response = requests.delete(url, json=payload, headers=headers)
+
+    if response.status_code not in (200, 204):
+        print(f"Removing track failed: {response.reason}")
+    else:
+        print(f"Track successfully removed")
+    return True
+
+
 def uniformize(s):
     t = ''
     for c in s:
@@ -205,9 +248,8 @@ if __name__ == '__main__':
     failed = []
     try:
         while playing:
-            if random.randint(0, 99) < 10 * len(failed):
-                random.shuffle(failed)
-                enqueue(token, failed.pop())
+            if failed and failed[0][0] <= rounds:
+                enqueue(token, failed.pop(0)[1])
             skip(token)
             rounds += 1
             missing_title = True
@@ -222,10 +264,11 @@ if __name__ == '__main__':
                             print(f'Title: "{title}"')
                             print(f'Missing Artists:', ", ".join(artists))
                             if missing_title and not artist_guessed:
-                                failed.append(uri)
+                                failed.append([rounds + 10, uri])
                             break
                         case "kill":
-                            failed.pop()
+                            if failed and kill(failed[-1][1], token):
+                                failed.pop()
                         case "pause":
                             pause(token)
                             input("Press enter to continue...")
@@ -241,7 +284,7 @@ if __name__ == '__main__':
                         case "again":
                             print(f'Title: "{title}"')
                             print(f'Missing Artists:', ", ".join(artists))
-                            failed.append(uri)
+                            failed.append([rounds + 10, uri])
                             break
                 else:
                     guess = uniformize(command)
