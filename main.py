@@ -11,7 +11,7 @@ import re
 import random
 
 
-PORT = 7000
+PORT = 8000
 REDIRECT_URL = f"http://localhost:{PORT}"
 PLAYLIST_ID = "1bCvkBvfgfT2w7q61RJE7O"
 PLAYLIST_URI = f"spotify:playlist:{PLAYLIST_ID}"
@@ -162,7 +162,7 @@ def resume(token):
         print(f"Resume failed: {response.reason}")
 
 
-def get_track_info(token):
+def get_current_info(token):
     url = f"https://api.spotify.com/v1/me/player/currently-playing"
     headers = {
         'Authorization': "Bearer " + token
@@ -254,7 +254,7 @@ if __name__ == '__main__':
             rounds += 1
             missing_title = True
             artist_guessed = False
-            title, artists, uri = get_track_info(token)
+            title, artists, uri = get_current_info(token)
             while missing_title or artists or no_skip:
                 while not (command := input("Enter Title, Artist or Featuring Artist\n> ")):
                     pass
@@ -278,7 +278,7 @@ if __name__ == '__main__':
                             break
                         case "refresh":
                             missing_title = True
-                            title, artists, uri = get_track_info(token)
+                            title, artists, uri = get_current_info(token)
                         case "noskip":
                             no_skip = not no_skip
                         case "again":
