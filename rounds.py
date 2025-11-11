@@ -56,28 +56,36 @@ def get_playlist_length(token):
 
 	response = requests.get(url, headers=headers, params={"fields": "tracks(total)"})
 	if response.status_code != 200:
-		print(f"Getting playlist length failed: {response.reason}")
+		print(f"Getting playlist length failed: {response.reason} - {response.text}")
 
 	return response.json()["tracks"]["total"]
 
 
 def get_playlist(token):
+	length = get_playlist_length(token)
+
+	idx = set()
+	while len(idx) < ROUND_LENGTH:
+		idx.add(rd.randint(0, length - 1))
+
+	tracks = []
+	for i in idx:
+		tracks.append(get_playlist_track(i, token))
+
+	return tracks
+
+
+def get_playlist_track(i, token):
 	url = f"https://api.spotify.com/v1/playlists/{PLAYLIST_ID}/tracks"
 	headers = {
 		'Authorization': "Bearer " + token
 	}
 
-	length = get_playlist_length(token)
-	if length <= ROUND_LENGTH:
-		offset = 0
-	else:
-		offset = rd.randint(0, length - ROUND_LENGTH - 1)
-	
 	params = {
 		"market": "DK",
-		"fields": "items(track(uri))",
-		"limit": ROUND_LENGTH,
-		"offset": offset,
+		"fields": "items(track(uri,artists(name),name))",
+		"limit": 1,
+		"offset": i,
 	}
 
 	response = requests.get(url, headers=headers, params=params)
@@ -86,7 +94,8 @@ def get_playlist(token):
 		print(f"Playing track failed: {response.reason}")
 
 	data = response.json()
-	return list(obj['track']['uri'] for obj in data['items'])
+	track = data['items'][0]['track']
+	return track['uri'], track['name'], {artist['name'] for artist in track['artists']}
 
 
 if __name__ == '__main__':
@@ -99,12 +108,16 @@ if __name__ == '__main__':
 		guessed = 0
 		all_guessed = True
 		rd.shuffle(playlist)
-		for uri in playlist:
-			title, artists = get_track_info(uri, token)
+		i = 0
+		while i < len(playlist):
+			uri, title, const_artists = playlist[i]
+			artists = {artist for artist in const_artists}
+			i += 1
 			play_track(uri, token)
 			title_guessed = False
 			artist_guessed = False
-			while not title_guessed or artists:
+			keep_playing = False
+			while keep_playing or not title_guessed or artists:
 				while not (command := input("Enter Title, Artist, or a Command\n> ")):
 					pass
 				if command[0] == '!':
@@ -117,10 +130,13 @@ if __name__ == '__main__':
 							resume(token)
 						case "replay":
 							play_track(uri, token)
+						case "play":
+							keep_playing = True
 						case "kill":
-							kill(uri, token)
-							playlist.remove(uri)
-							break
+							if kill(uri, token):
+								i -= 1
+								playlist = [track for track in playlist if track[0] != uri]
+								break
 						case "quit":
 							exit()
 				else:

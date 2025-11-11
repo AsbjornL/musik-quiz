@@ -15,7 +15,7 @@ PORT = 8000
 REDIRECT_URL = f"http://localhost:{PORT}"
 PLAYLIST_ID = "1bCvkBvfgfT2w7q61RJE7O"
 PLAYLIST_URI = f"spotify:playlist:{PLAYLIST_ID}"
-SCOPE = "user-modify-playback-state user-read-currently-playing user-read-playback-state playlist-modify-public playlist-modify-private "
+SCOPE = "user-modify-playback-state user-read-currently-playing user-read-playback-state playlist-modify-public playlist-modify-private playlist-read-private"
 
 
 def auth_url():
