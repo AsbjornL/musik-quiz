@@ -11,9 +11,9 @@ import re
 import random
 
 
-PORT = 8000
-REDIRECT_URL = f"http://localhost:{PORT}"
-PLAYLIST_ID = "1bCvkBvfgfT2w7q61RJE7O"
+PORT = 7000
+REDIRECT_URL = f"http://127.0.0.1:{PORT}"
+PLAYLIST_ID = "0uM9ZZIgYvyutul9RmEq22"
 PLAYLIST_URI = f"spotify:playlist:{PLAYLIST_ID}"
 SCOPE = "user-modify-playback-state user-read-currently-playing user-read-playback-state playlist-modify-public playlist-modify-private playlist-read-private"
 

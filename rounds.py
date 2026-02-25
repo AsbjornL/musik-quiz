@@ -13,7 +13,8 @@ from main import (
 )
 
 
-ROUND_LENGTH = 25
+ROUND_LENGTH = 109
+ELIMINATION = True
 
 
 def get_track_info(uri, token):
@@ -109,7 +110,9 @@ if __name__ == '__main__':
 		all_guessed = True
 		rd.shuffle(playlist)
 		i = 0
+		remaining = []
 		while i < len(playlist):
+			remaining.append(playlist[i])
 			uri, title, const_artists = playlist[i]
 			artists = {artist for artist in const_artists}
 			i += 1
@@ -159,4 +162,7 @@ if __name__ == '__main__':
 				all_guessed = False
 			else:
 				guessed += 1
+				remaining.pop()
 		print(f"{guessed} / {len(playlist)} guessed")
+		if ELIMINATION:
+			playlist = remaining
