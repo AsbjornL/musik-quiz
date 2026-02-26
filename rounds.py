@@ -147,6 +147,7 @@ if __name__ == '__main__':
 							if kill(uri, token):
 								i -= 1
 								playlist = [track for track in playlist if track[0] != uri]
+								remaining.pop()
 								break
 						case "quit":
 							exit()
