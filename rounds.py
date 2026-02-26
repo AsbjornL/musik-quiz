@@ -13,7 +13,7 @@ from main import (
 )
 
 
-ROUND_LENGTH = 109
+ROUND_LENGTH = 200
 ELIMINATION = True
 
 
@@ -65,18 +65,23 @@ def get_playlist_length(token):
 def get_playlist(token):
 	length = get_playlist_length(token)
 
-	idx = set()
-	while len(idx) < ROUND_LENGTH:
-		idx.add(rd.randint(0, length - 1))
+	idx = sorted(rd.sample(range(length), k=min(length, ROUND_LENGTH)))
 
 	tracks = []
-	for i in idx:
-		tracks.append(get_playlist_track(i, token))
+	cnt = 1
+	for i in range(1, len(idx) + 1):
+		if i < len(idx) and idx[i] - 1 == idx[i-1]:
+			cnt += 1
+		else:
+			tracks.extend(get_playlist_track(idx[i - cnt], token, num=cnt))
+			cnt = 1
 
 	return tracks
 
 
-def get_playlist_track(i, token):
+def get_playlist_track(i, token, num=1):
+	if num > 50:
+		return get_playlist_track(i, token, num=50) + get_playlist_track(i + 50, token, num=num - 50)
 	url = f"https://api.spotify.com/v1/playlists/{PLAYLIST_ID}/tracks"
 	headers = {
 		'Authorization': "Bearer " + token
@@ -85,7 +90,7 @@ def get_playlist_track(i, token):
 	params = {
 		"market": "DK",
 		"fields": "items(track(uri,artists(name),name))",
-		"limit": 1,
+		"limit": num,
 		"offset": i,
 	}
 
@@ -94,9 +99,12 @@ def get_playlist_track(i, token):
 	if response.status_code != 200:
 		print(f"Playing track failed: {response.reason}")
 
+	tracks = []
 	data = response.json()
-	track = data['items'][0]['track']
-	return track['uri'], track['name'], {artist['name'] for artist in track['artists']}
+	for blob in data['items']:
+		track = blob['track']
+		tracks.append((track['uri'], track['name'], {artist['name'] for artist in track['artists']}))
+	return tracks
 
 
 if __name__ == '__main__':

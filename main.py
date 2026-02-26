@@ -11,7 +11,7 @@ import re
 import random
 
 
-PORT = 7000
+PORT = 8000
 REDIRECT_URL = f"http://127.0.0.1:{PORT}"
 PLAYLIST_ID = "0uM9ZZIgYvyutul9RmEq22"
 PLAYLIST_URI = f"spotify:playlist:{PLAYLIST_ID}"
