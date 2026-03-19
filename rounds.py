@@ -13,7 +13,7 @@ from main import (
 )
 
 
-ROUND_LENGTH = 200
+ROUND_LENGTH = 30
 ELIMINATION = True
 
 
@@ -151,6 +151,8 @@ if __name__ == '__main__':
 								break
 						case "quit":
 							exit()
+						case "standing":
+							print(f"{i} / {len(playlist)}")
 				else:
 					guess = uniformize(command)
 					if not title_guessed and guess == uniformize(title):
