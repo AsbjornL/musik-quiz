@@ -13,8 +13,9 @@ from main import (
 )
 
 
-ROUND_LENGTH = 30
+ROUND_LENGTH = 250
 ELIMINATION = True
+HARD_MODE = True
 
 
 def get_track_info(uri, token):
@@ -103,7 +104,7 @@ def get_playlist_track(i, token, num=1):
 	data = response.json()
 	for blob in data['items']:
 		track = blob['track']
-		tracks.append((track['uri'], track['name'], {artist['name'] for artist in track['artists']}))
+		tracks.append((track['uri'], track['name'], [artist['name'] for artist in track['artists']]))
 	return tracks
 
 
@@ -128,6 +129,9 @@ if __name__ == '__main__':
 			title_guessed = False
 			artist_guessed = False
 			keep_playing = False
+			title_hint = 0
+			artist_hint = 0
+			hint_used = False
 			while keep_playing or not title_guessed or artists:
 				while not (command := input("Enter Title, Artist, or a Command\n> ")):
 					pass
@@ -153,6 +157,14 @@ if __name__ == '__main__':
 							exit()
 						case "standing":
 							print(f"{i} / {len(playlist)}")
+						case "hint":
+							hint_used = True
+							if not title_guessed and title_hint < len(title):
+								title_hint += 1
+								print(f"Title: {title[:title_hint]}")
+							elif artists and artist_hint < len(artists[0]):
+								artist_hint += 1
+								print(f"Artist: {artists[0][:artist_hint]}")
 				else:
 					guess = uniformize(command)
 					if not title_guessed and guess == uniformize(title):
@@ -161,15 +173,19 @@ if __name__ == '__main__':
 					else:
 						for name in artists:
 							if guess == uniformize(name):
-								artist_guessed = True
 								print("Correct artist!")
-								artists.discard(name)
+								artists = [artist for artist in artists if artist != name]
+								artist_hint = 0
+								if HARD_MODE:
+									artist_guessed = not artists
+								else:
+									artist_guessed = True
 								break
 						else:
 							print("No match...")
 			print(f'Title: "{title}"')
 			print(f'Missing Artists:', ", ".join(artists))
-			if not artist_guessed or not title_guessed:
+			if hint_used or not artist_guessed or not title_guessed:
 				all_guessed = False
 			else:
 				guessed += 1
