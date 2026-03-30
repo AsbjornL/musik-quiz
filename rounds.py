@@ -13,9 +13,9 @@ from main import (
 )
 
 
-ROUND_LENGTH = 250
+ROUND_LENGTH = 200
 ELIMINATION = True
-HARD_MODE = True
+HARD_MODE = False
 
 
 def get_track_info(uri, token):
@@ -113,6 +113,7 @@ if __name__ == '__main__':
 	rd.seed(time.time())
 	playlist = get_playlist(token)
 	all_guessed = False
+	start_time = time.time()
 	while not all_guessed:
 		print("New round!")
 		guessed = 0
@@ -165,6 +166,8 @@ if __name__ == '__main__':
 							elif artists and artist_hint < len(artists[0]):
 								artist_hint += 1
 								print(f"Artist: {artists[0][:artist_hint]}")
+						case "time":
+							print(f"Minutes spents: {(time.time() - start_time) // 60}")
 				else:
 					guess = uniformize(command)
 					if not title_guessed and guess == uniformize(title):
@@ -193,3 +196,5 @@ if __name__ == '__main__':
 		print(f"{guessed} / {len(playlist)} guessed")
 		if ELIMINATION:
 			playlist = remaining
+	time_spent = int(time.time() - start_time)
+	print(f"Time Spent: {time_spent // 60}m {time_spent % 60}s")
