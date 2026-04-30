@@ -31,7 +31,7 @@ def get_track_info(uri, token):
 		print(f"Getting track info failed: {response.reason}")
 
 	json = response.json()
-	return json['name'], set(artist['name'] for artist in json['artists'])
+	return json['name'], [artist['name'] for artist in json['artists']]
 
 
 def play_track(uri, token):
@@ -105,6 +105,7 @@ def get_playlist_track(i, token, num=1):
 	for blob in data['items']:
 		track = blob['track']
 		tracks.append((track['uri'], track['name'], [artist['name'] for artist in track['artists']]))
+	print(f"Retrieved {num} tracks")
 	return tracks
 
 
@@ -124,7 +125,7 @@ if __name__ == '__main__':
 		while i < len(playlist):
 			remaining.append(playlist[i])
 			uri, title, const_artists = playlist[i]
-			artists = {artist for artist in const_artists}
+			artists = [artist for artist in const_artists]
 			i += 1
 			play_track(uri, token)
 			title_guessed = False
