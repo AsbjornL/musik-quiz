@@ -1,12 +1,13 @@
 import requests
 import random as rd
 import time
+import unicodedata
+import re
 from main import (
 	get_access_token,
 	get_auth_code,
 	pause,
 	resume,
-	uniformize,
 	kill,
 	PLAYLIST_ID,
 	PLAYLIST_URI,
@@ -15,7 +16,8 @@ from main import (
 
 ROUND_LENGTH = 200
 ELIMINATION = True
-HARD_MODE = False
+HARD_MODE = True
+SORT = False
 
 
 def get_track_info(uri, token):
@@ -107,6 +109,29 @@ def get_playlist_track(i, token, num=1):
 		tracks.append((track['uri'], track['name'], [artist['name'] for artist in track['artists']]))
 	print(f"Retrieved {num} tracks")
 	return tracks
+
+
+def uniformize(s):
+	t = ''
+	for c in s:
+		if c in ['(', '-']:
+			break
+		if c in ['.', '?', '!', '\'', ',', ' ', '´']:
+			continue
+		t += c
+
+	normalized = unicodedata.normalize('NFD', t)
+	without_accents = ''.join(
+		ch for ch in normalized
+		if unicodedata.category(ch) != 'Mn'
+	)
+	cleaned = re.sub(r'[^0-9a-zA-Z]', '', without_accents)
+
+	lower = cleaned.strip().lower()
+	if SORT:
+		return ''.join(sorted(lower))
+	else:
+		return lower
 
 
 if __name__ == '__main__':
